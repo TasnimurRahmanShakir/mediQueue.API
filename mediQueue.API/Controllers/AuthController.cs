@@ -4,6 +4,7 @@ using mediQueue.API.Helpers;
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
 using mediQueue.API.Repository.Interfaces;
+using mediQueue.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,11 +16,14 @@ namespace mediQueue.API.Controllers
     {
         private readonly IDbOperation<User> userOperation;
         private readonly IMapper mapper;
+        private readonly JwtService jwtService;
 
-        public AuthController(IDbOperation<User> userOperation, IMapper mapper)
+        public AuthController(IDbOperation<User> userOperation, IMapper mapper, JwtService jwtService)
         {
             this.userOperation = userOperation;
             this.mapper = mapper;
+            this.jwtService = jwtService;
+
         }
 
 
@@ -88,13 +92,18 @@ namespace mediQueue.API.Controllers
 
             var result_ = mapper.Map<UserDTO.Response>(user);
 
+            var token = jwtService.JwtTokenGenerator(user);
 
+            if (token == null) return BadRequest("Token generation failed");
             return Ok(new
             {
                 message = "Login Successfull",
-                result = result_
+                result = result_,
+                token = token
             });
 
         }
+
+
     }
 }

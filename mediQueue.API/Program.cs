@@ -1,12 +1,13 @@
-using System.Text;
 using mediQueue.API.Context;
 using mediQueue.API.Helper;
 using mediQueue.API.Repository.Implementations;
 using mediQueue.API.Repository.Interfaces;
+using mediQueue.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(option => option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped(typeof(IDbOperation<>), typeof(DbOperation<>));
+// Inside Program.cs
+builder.Services.AddScoped<JwtService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddControllers();
