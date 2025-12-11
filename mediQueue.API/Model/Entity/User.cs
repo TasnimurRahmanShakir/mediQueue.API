@@ -11,6 +11,8 @@ namespace mediQueue.API.Model.Entity
         public string PasswordHash { get; set; }
         public string ImageUrl { get; set; }
         public string Role { get; set; }
+        public string? RefreshToken { get; set; }
+        public DateTime RefreshTokenExpiryTime { get; set; }
         public Doctor? DoctorProfile { get; set; }
         public Receptionist? ReceptionistProfile { get; set; }
     }

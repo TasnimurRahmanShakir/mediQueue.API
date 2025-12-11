@@ -2,12 +2,14 @@
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
 using mediQueue.API.Repository.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace mediQueue.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PatientController(IDbOperation<Patient> patientOperationRepo, IMapper _mapper) : ControllerBase
     {
         private readonly IDbOperation<Patient> patientOperation = patientOperationRepo;
@@ -61,6 +63,7 @@ namespace mediQueue.API.Controllers
         // 4. CREATE
         // ===========================
         [HttpPost("create")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Create([FromBody] PatientDTO.Create patientdto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);

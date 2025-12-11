@@ -29,7 +29,8 @@ public class JwtService(IConfiguration configuration)
             {
             new Claim(ClaimTypes.Name, user.Email),
             // You might want to add ID here too
-             new Claim("id", user.Id.ToString())
+             new Claim("id", user.Id.ToString()),
+             new Claim(ClaimTypes.Role, user.Role)
         }),
 
             Issuer = issuer,
@@ -42,5 +43,13 @@ public class JwtService(IConfiguration configuration)
         var tokenHandler = new JwtSecurityTokenHandler();
         var securityToken = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(securityToken);
+    }
+
+    public string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
     }
 }

@@ -11,8 +11,8 @@ namespace mediQueue.API.Controllers
     [ApiController]
     public class InvoiceController : ControllerBase
     {
-        private readonly IDbOperation<Invoice> invoiceOperation;
-        private readonly IMapper mapper;
+        private readonly IDbOperation<Invoice>? invoiceOperation;
+        private readonly IMapper? mapper;
 
         // (Constructor Injection omitted for brevity)
 

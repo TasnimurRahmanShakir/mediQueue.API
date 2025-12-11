@@ -54,5 +54,7 @@ namespace mediQueue.API.Model.DTO
             public ReceptionistDTO.Response? ReceptionistProfile { get; set; }
 
         }
+        public class RefreshRequest { public string RefreshToken { get; set; } }
+
     }
 }

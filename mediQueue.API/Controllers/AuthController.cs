@@ -5,6 +5,7 @@ using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
 using mediQueue.API.Repository.Interfaces;
 using mediQueue.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,8 +32,8 @@ namespace mediQueue.API.Controllers
         public async Task<IActionResult> GetAllUser()
         {
             var users = await userOperation.GetAllWithIncludesAsync(
-                u => u.DoctorProfile,
-                u => u.ReceptionistProfile
+                u => u.DoctorProfile!,
+                u => u.ReceptionistProfile!
             );
 
             var responseDto = mapper.Map<ICollection<UserDTO.Response>>(users);
@@ -42,6 +43,7 @@ namespace mediQueue.API.Controllers
 
 
         [HttpPost("register")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Register([FromBody] UserDTO.Create userDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -67,6 +69,7 @@ namespace mediQueue.API.Controllers
         }
 
         [HttpGet("{id:Guid}")]
+
         public async Task<IActionResult> GetById(Guid id)
         {
             var user = await userOperation.GetByIdAsync(id);
@@ -77,6 +80,7 @@ namespace mediQueue.API.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> LogIn([FromBody] UserDTO.LoginRequest userDto)
         {
 
@@ -95,15 +99,53 @@ namespace mediQueue.API.Controllers
             var token = jwtService.JwtTokenGenerator(user);
 
             if (token == null) return BadRequest("Token generation failed");
+
+            var refreshToken = jwtService.GenerateRefreshToken();
+
+            // SAVE TO DB
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await userOperation.SaveChangesAsync();
+
             return Ok(new
             {
                 message = "Login Successfull",
-                result = result_,
-                token = token
+                result = mapper.Map<UserDTO.Response>(user),
+                token = token,
+                refreshToken = refreshToken
             });
 
+
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> Refresh([FromBody] UserDTO.RefreshRequest request)
+        {
+
+            var users = await userOperation.FindAsync(u => u.RefreshToken == request.RefreshToken);
+            var user = users.FirstOrDefault();
+
+            if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+            {
+                return Unauthorized("Invalid or expired refresh token");
+            }
+
+            var newToken = jwtService.JwtTokenGenerator(user);
+            var newRefreshToken = jwtService.GenerateRefreshToken();
+
+            user.RefreshToken = newRefreshToken;
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await userOperation.SaveChangesAsync();
+
+            return Ok(new
+            {
+                token = newToken,
+                refreshToken = newRefreshToken
+            });
         }
 
 
     }
+
+
 }
