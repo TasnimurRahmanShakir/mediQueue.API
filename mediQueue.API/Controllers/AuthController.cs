@@ -29,6 +29,7 @@ namespace mediQueue.API.Controllers
 
 
         [HttpGet]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUser()
         {
             var users = await userOperation.GetAllWithIncludesAsync(
@@ -37,33 +38,91 @@ namespace mediQueue.API.Controllers
             );
 
             var responseDto = mapper.Map<ICollection<UserDTO.Response>>(users);
-            return Ok(responseDto);
+            return Ok(new
+            {
+                message = "All users get successfully",
+                result = responseDto
+            });
+        }
+
+        [HttpGet("search/{param}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Search(string param)
+        {
+            var users = await userOperation.FindAsync(p =>
+                p.Name.Contains(param) ||
+                p.PhoneNumber.Contains(param) ||
+                p.Email.Contains(param)
+            );
+
+            if (users == null || !users.Any())
+            {
+                return NotFound("No patients found matching.");
+            }
+
+            var result = mapper.Map<ICollection<UserDTO.Response>>(users);
+            return Ok(new
+            {
+                messge = "Find Successfully",
+                result = result
+            });
         }
 
 
 
         [HttpPost("register")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Register([FromBody] UserDTO.Create userDto)
+        //[Authorize(Roles = "Admin")] 
+        public async Task<IActionResult> Register([FromForm] UserDTO.Create userDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            Console.WriteLine(userDto);
             try
             {
                 var user = mapper.Map<User>(userDto);
 
+                if (userDto.Image != null && userDto.Image.Length > 0)
+                {
+                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                    // Generate unique filename
+                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + userDto.Image.FileName;
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    // Save file to stream
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await userDto.Image.CopyToAsync(stream);
+                    }
+
+                    // Set the URL property on the Entity
+                    user.ImageUrl = $"/uploads/{uniqueFileName}";
+                }
+                else
+                {
+                    // Optional: Set a default placeholder if no image provided
+                    user.ImageUrl = null;
+                }
+
+                // 4. Hash Password
                 user.PasswordHash = PasswordHelper.HashPassword(userDto.Password);
 
+                // 5. Save to DB
                 await userOperation.AddAsync(user);
                 await userOperation.SaveChangesAsync();
 
                 var responseDto = mapper.Map<UserDTO.Response>(user);
-                return CreatedAtAction(nameof(GetById), new { id = responseDto.Id }, responseDto);
-                //Results = responseDto
+
+                return Ok(new
+                {
+                    message = "User registered successfully",
+                    result = responseDto
+                });
             }
             catch (Exception ex)
             {
-                // Catch unique constraint errors (duplicate email/phone)
                 return StatusCode(500, "Registration failed: " + ex.Message);
             }
         }

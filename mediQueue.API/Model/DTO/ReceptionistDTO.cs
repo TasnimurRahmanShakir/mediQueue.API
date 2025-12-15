@@ -9,6 +9,7 @@ namespace mediQueue.API.Model.DTO
             [Required]
             public Guid UserId { get; set; }
 
+
             [Required]
             public string ShiftTime { get; set; }
         }

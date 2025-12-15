@@ -24,8 +24,11 @@ namespace mediQueue.API.Model.DTO
             [MinLength(6)]
             public string Password { get; set; }
 
-            [Required, MaxLength(100)]
-            public string ImageUrl { get; set; }
+            // 1. Add this to receive the file
+            public IFormFile? Image { get; set; }
+
+            // 2. Remove [Required] here because frontend doesn't send this string
+            public string? ImageUrl { get; set; }
 
             public string Role { get; set; }
         }
@@ -50,10 +53,13 @@ namespace mediQueue.API.Model.DTO
             public string PhoneNumber { get; set; }
             public string ImageUrl { get; set; }
             public string Role { get; set; }
+            public string Status { get; set; }
             public DoctorDTO.Response? DoctorProfile { get; set; }
             public ReceptionistDTO.Response? ReceptionistProfile { get; set; }
 
         }
+
+
         public class RefreshRequest { public string RefreshToken { get; set; } }
 
     }

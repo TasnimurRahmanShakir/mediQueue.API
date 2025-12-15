@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +31,11 @@ builder.Services.AddCors(options =>
 // Inside Program.cs
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    // This tells .NET: "If you see a circular loop, just ignore it instead of crashing."
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+});
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -84,7 +89,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
+app.UseStaticFiles(); 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();

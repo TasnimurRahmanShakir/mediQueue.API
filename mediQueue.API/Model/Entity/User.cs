@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using System.Text.Json.Serialization;
 
 namespace mediQueue.API.Model.Entity
 {
@@ -11,9 +12,14 @@ namespace mediQueue.API.Model.Entity
         public string PasswordHash { get; set; }
         public string ImageUrl { get; set; }
         public string Role { get; set; }
+        public string Status { get; set; }
         public string? RefreshToken { get; set; }
+
         public DateTime RefreshTokenExpiryTime { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Doctor? DoctorProfile { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Receptionist? ReceptionistProfile { get; set; }
     }
 }

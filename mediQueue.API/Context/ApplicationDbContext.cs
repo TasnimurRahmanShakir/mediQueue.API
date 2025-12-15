@@ -57,7 +57,7 @@ namespace mediQueue.API.Context
                 entity.Property(p => p.PasswordHash).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.ImageUrl).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.Role).IsRequired().HasMaxLength(100);
-
+                entity.Property(p => p.Status).HasDefaultValue("Active");
 
             });
 

@@ -1,4 +1,6 @@
-﻿namespace mediQueue.API.Model.Entity
+﻿using System.Text.Json.Serialization;
+
+namespace mediQueue.API.Model.Entity
 {
     public class Receptionist
     {
@@ -10,6 +12,7 @@
 
         // Foreign Key to User
         public Guid UserId { get; set; }
+        [JsonIgnore]
         public User User { get; set; }
     }
 }

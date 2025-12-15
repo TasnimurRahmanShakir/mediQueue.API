@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using mediQueue.API.Model.Entity;
+using System.Linq.Expressions;
 
 namespace mediQueue.API.Repository.Interfaces
 {
