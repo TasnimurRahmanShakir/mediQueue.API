@@ -36,23 +36,14 @@ namespace mediQueue.API.Helper
             CreateMap<DoctorDTO.Create, Doctor>();
             CreateMap<DoctorDTO.Update, Doctor>();
 
-            CreateMap<Doctor, DoctorDTO.Response>()
-                // Safety Check: Use null propagation (?) to prevent crash if User is missing
-                .ForMember(dest => dest.DoctorName, opt => opt.MapFrom(src => src.User != null ? src.User.Name : string.Empty))
-                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.User != null ? src.User.ImageUrl : string.Empty))
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.User != null ? src.User.Role : string.Empty))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty));
+            CreateMap<Doctor, DoctorDTO.Response>();
 
 
             //====================
             // Receptionist Mapper
             //====================
             CreateMap<ReceptionistDTO.Create, Receptionist>();
-            CreateMap<Receptionist, ReceptionistDTO.Response>()
-                .ForMember(dest => dest.ReceptionistName, opt => opt.MapFrom(src => src.User.Name))
-                .ForMember(dest => dest.ImageUrl, opt => opt.MapFrom(src => src.User.ImageUrl))
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.User.Role))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email));
+            CreateMap<Receptionist, ReceptionistDTO.Response>();
 
 
             //====================

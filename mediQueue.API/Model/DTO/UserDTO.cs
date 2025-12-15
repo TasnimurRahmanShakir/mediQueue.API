@@ -8,6 +8,7 @@ namespace mediQueue.API.Model.DTO
         //  REGISTER
         public class Create
         {
+            // --- Existing User Fields ---
             [Required]
             [StringLength(100)]
             public string Name { get; set; }
@@ -24,13 +25,18 @@ namespace mediQueue.API.Model.DTO
             [MinLength(6)]
             public string Password { get; set; }
 
-            // 1. Add this to receive the file
             public IFormFile? Image { get; set; }
-
-            // 2. Remove [Required] here because frontend doesn't send this string
             public string? ImageUrl { get; set; }
 
-            public string Role { get; set; }
+            [Required]
+            public string Role { get; set; } // e.g., "Doctor", "Patient", "Receptionist"
+
+            // --- NEW: Doctor Specific Fields (Nullable) ---
+            public string? Specialization { get; set; }
+            public string? LicenseNumber { get; set; }
+            public decimal? ConsultationFee { get; set; }
+
+            public string? ShiftTime { get; set; }
         }
 
         // LOGIN REQUEST

@@ -5,7 +5,6 @@ using mediQueue.API.Repository.Interfaces;
 using mediQueue.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
@@ -31,13 +30,8 @@ builder.Services.AddCors(options =>
 // Inside Program.cs
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddControllers().AddJsonOptions(options =>
-{
-    // This tells .NET: "If you see a circular loop, just ignore it instead of crashing."
-    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-});
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option =>
@@ -89,7 +83,7 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-app.UseStaticFiles(); 
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
 app.UseAuthentication();

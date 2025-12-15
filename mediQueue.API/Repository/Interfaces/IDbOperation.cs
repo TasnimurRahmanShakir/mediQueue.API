@@ -19,5 +19,6 @@ namespace mediQueue.API.Repository.Interfaces
 
 
         Task<int> SaveChangesAsync();
+        Task FindAsync(Guid id);
     }
 }

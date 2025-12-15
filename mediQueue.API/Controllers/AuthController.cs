@@ -1,13 +1,13 @@
 ﻿using AutoMapper;
-using mediQueue.API.Context;
 using mediQueue.API.Helpers;
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
 using mediQueue.API.Repository.Interfaces;
 using mediQueue.API.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
+using UserEntity = mediQueue.API.Model.Entity.User;
 
 namespace mediQueue.API.Controllers
 {
@@ -15,29 +15,38 @@ namespace mediQueue.API.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly IDbOperation<User> userOperation;
-        private readonly IMapper mapper;
-        private readonly JwtService jwtService;
+        // Private readonly fields used by controller actions
+        private readonly IDbOperation<UserEntity> _userOperation;
+        private readonly IDbOperation<Doctor> _doctorOperation;
+        private readonly IDbOperation<Receptionist> _receptionistOperation;
+        private readonly IMapper _mapper;
+        private readonly JwtService _jwtService;
 
-        public AuthController(IDbOperation<User> userOperation, IMapper mapper, JwtService jwtService)
+        // Constructor with null-checks to satisfy nullable analysis and ensure dependencies exist
+        public AuthController(
+            IDbOperation<UserEntity> userOperation,
+            IDbOperation<Doctor> doctorOperation,
+            IDbOperation<Receptionist> receptionistOperation,
+            IMapper mapper,
+            JwtService jwtService)
         {
-            this.userOperation = userOperation;
-            this.mapper = mapper;
-            this.jwtService = jwtService;
-
+            _userOperation = userOperation;
+            _doctorOperation = doctorOperation;
+            _receptionistOperation = receptionistOperation;
+            _mapper = mapper;
+            _jwtService = jwtService;
         }
-
 
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetAllUser()
         {
-            var users = await userOperation.GetAllWithIncludesAsync(
+            var users = await _userOperation.GetAllWithIncludesAsync(
                 u => u.DoctorProfile!,
                 u => u.ReceptionistProfile!
             );
 
-            var responseDto = mapper.Map<ICollection<UserDTO.Response>>(users);
+            var responseDto = _mapper.Map<ICollection<UserDTO.Response>>(users);
             return Ok(new
             {
                 message = "All users get successfully",
@@ -49,7 +58,7 @@ namespace mediQueue.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Search(string param)
         {
-            var users = await userOperation.FindAsync(p =>
+            var users = await _userOperation.FindAsync(p =>
                 p.Name.Contains(param) ||
                 p.PhoneNumber.Contains(param) ||
                 p.Email.Contains(param)
@@ -60,7 +69,7 @@ namespace mediQueue.API.Controllers
                 return NotFound("No patients found matching.");
             }
 
-            var result = mapper.Map<ICollection<UserDTO.Response>>(users);
+            var result = _mapper.Map<ICollection<UserDTO.Response>>(users);
             return Ok(new
             {
                 messge = "Find Successfully",
@@ -68,73 +77,123 @@ namespace mediQueue.API.Controllers
             });
         }
 
-
-
         [HttpPost("register")]
-        //[Authorize(Roles = "Admin")] 
         public async Task<IActionResult> Register([FromForm] UserDTO.Create userDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            Console.WriteLine(userDto);
             try
             {
-                var user = mapper.Map<User>(userDto);
+                string finalImageUrl = string.Empty;
 
+                // =========================================================
+                // 2. SAFE IMAGE UPLOAD LOGIC (Using Project Directory)
+                // =========================================================
                 if (userDto.Image != null && userDto.Image.Length > 0)
                 {
-                    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
-
-                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                    // Generate unique filename
-                    var uniqueFileName = Guid.NewGuid().ToString() + "_" + userDto.Image.FileName;
-                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    // Save file to stream
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    try
                     {
-                        await userDto.Image.CopyToAsync(stream);
+                        // 1. Get the current Project Directory
+                        string projectDir = Directory.GetCurrentDirectory();
+
+                        // 2. Combine to create path: ProjectDir/wwwroot/uploads
+                        // We put it in wwwroot so it can be accessed via URL later
+                        string uploadDir = Path.Combine(projectDir, "wwwroot", "uploads");
+
+                        // 3. Create directory if it doesn't exist
+                        if (!Directory.Exists(uploadDir))
+                        {
+                            Directory.CreateDirectory(uploadDir);
+                        }
+
+                        // 4. Generate unique filename
+                        string fileName = $"{Guid.NewGuid()}{Path.GetExtension(userDto.Image.FileName)}";
+                        string fullPath = Path.Combine(uploadDir, fileName);
+
+                        // 5. Save the file
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await userDto.Image.CopyToAsync(stream);
+                        }
+
+                        // 6. Set the URL path for DB (Relative path)
+                        finalImageUrl = $"/uploads/{fileName}";
                     }
-
-                    // Set the URL property on the Entity
-                    user.ImageUrl = $"/uploads/{uniqueFileName}";
+                    catch (Exception fileEx)
+                    {
+                        // Log error but DO NOT crash. Continue registration without image.
+                        Console.WriteLine($"Image Upload Failed: {fileEx.Message}");
+                    }
                 }
-                else
+                // =========================================================
+
+                var user = new User
                 {
-                    // Optional: Set a default placeholder if no image provided
-                    user.ImageUrl = null;
-                }
+                    Name = userDto.Name,
+                    Email = userDto.Email,
+                    PhoneNumber = userDto.PhoneNumber,
+                    ImageUrl = finalImageUrl, // Will be empty string if upload failed
+                    Role = userDto.Role,
+                    Status = "Active"
+                };
 
-                // 4. Hash Password
                 user.PasswordHash = PasswordHelper.HashPassword(userDto.Password);
 
-                // 5. Save to DB
-                await userOperation.AddAsync(user);
-                await userOperation.SaveChangesAsync();
+                await _userOperation.AddAsync(user);
+                await _userOperation.SaveChangesAsync();
 
-                var responseDto = mapper.Map<UserDTO.Response>(user);
+                // 2. Create and Save Role Profile
+                if (userDto.Role.Equals("Doctor", StringComparison.OrdinalIgnoreCase))
+                {
+                    var doctor = new Doctor
+                    {
+                        UserId = user.Id,
+                        Specialization = userDto.Specialization,
+                        LicenseNumber = userDto.LicenseNumber,
+                        ConsultationFee = userDto.ConsultationFee ?? 0
+                    };
+
+                    await _doctorOperation.AddAsync(doctor);
+                    await _doctorOperation.SaveChangesAsync();
+                    user.DoctorProfile = doctor;
+                }
+                else if (userDto.Role.Equals("Receptionist", StringComparison.OrdinalIgnoreCase))
+                {
+                    var receptionist = new Receptionist
+                    {
+                        UserId = user.Id,
+                        ShiftTime = userDto.ShiftTime
+                    };
+
+                    await _receptionistOperation.AddAsync(receptionist);
+                    await _receptionistOperation.SaveChangesAsync();
+                    user.ReceptionistProfile = receptionist;
+                }
 
                 return Ok(new
                 {
-                    message = "User registered successfully",
-                    result = responseDto
+                    message = "Registration successful",
+                    result = user
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, "Registration failed: " + ex.Message);
+                // Catches database errors or unexpected system errors
+                return StatusCode(500, new
+                {
+                    message = "Registration failed due to server error",
+                    error = ex.Message
+                });
             }
         }
 
         [HttpGet("{id:Guid}")]
-
         public async Task<IActionResult> GetById(Guid id)
         {
-            var user = await userOperation.GetByIdAsync(id);
+            var user = await _userOperation.GetByIdAsync(id);
             if (user == null) return NotFound("User not found.");
 
-            var result = mapper.Map<UserDTO.Response>(user);
+            var result = _mapper.Map<UserDTO.Response>(user);
             return Ok(result);
         }
 
@@ -142,46 +201,56 @@ namespace mediQueue.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> LogIn([FromBody] UserDTO.LoginRequest userDto)
         {
-
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var users = await userOperation.FindAsync(u => u.Email == userDto.Email);
+            var users = await _userOperation.FindAsync(u => u.Email == userDto.Email);
             var user = users.FirstOrDefault();
+
             if (user == null) return Unauthorized("User Does not exist");
 
             bool IsPassValid = PasswordHelper.VerifyPassword(userDto.Password, user.PasswordHash);
-
             if (!IsPassValid) return BadRequest("Email Or Password Incorrect!");
 
-            var result_ = mapper.Map<UserDTO.Response>(user);
-
-            var token = jwtService.JwtTokenGenerator(user);
+            var token = _jwtService.JwtTokenGenerator(user);
 
             if (token == null) return BadRequest("Token generation failed");
 
-            var refreshToken = jwtService.GenerateRefreshToken();
+            var refreshToken = _jwtService.GenerateRefreshToken();
 
             // SAVE TO DB
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            await userOperation.SaveChangesAsync();
+            await _userOperation.SaveChangesAsync();
 
             return Ok(new
             {
                 message = "Login Successfull",
-                result = mapper.Map<UserDTO.Response>(user),
+                result = _mapper.Map<UserDTO.Response>(user),
                 token = token,
                 refreshToken = refreshToken
             });
+        }
 
+        [HttpDelete("delete/{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var user = await _userOperation.GetByIdAsync(id);
 
+            if (user == null)
+            {
+                return NotFound($"User with ID {id} not found.");
+            }
+
+            _userOperation.DeleteAsync(user);
+            await _userOperation.SaveChangesAsync();
+
+            return Ok(new { message = "User deleted successfully." });
         }
 
         [HttpPost("refresh")]
         public async Task<IActionResult> Refresh([FromBody] UserDTO.RefreshRequest request)
         {
-
-            var users = await userOperation.FindAsync(u => u.RefreshToken == request.RefreshToken);
+            var users = await _userOperation.FindAsync(u => u.RefreshToken == request.RefreshToken);
             var user = users.FirstOrDefault();
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
@@ -189,12 +258,12 @@ namespace mediQueue.API.Controllers
                 return Unauthorized("Invalid or expired refresh token");
             }
 
-            var newToken = jwtService.JwtTokenGenerator(user);
-            var newRefreshToken = jwtService.GenerateRefreshToken();
+            var newToken = _jwtService.JwtTokenGenerator(user);
+            var newRefreshToken = _jwtService.GenerateRefreshToken();
 
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
-            await userOperation.SaveChangesAsync();
+            await _userOperation.SaveChangesAsync();
 
             return Ok(new
             {
@@ -202,9 +271,5 @@ namespace mediQueue.API.Controllers
                 refreshToken = newRefreshToken
             });
         }
-
-
     }
-
-
 }

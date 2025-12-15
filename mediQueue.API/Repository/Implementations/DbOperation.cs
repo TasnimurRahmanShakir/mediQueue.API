@@ -84,5 +84,10 @@ namespace mediQueue.API.Repository.Implementations
         {
             dbSet.Update(entity);
         }
+
+        public Task FindAsync(Guid id)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -27,11 +27,6 @@ namespace mediQueue.API.Model.DTO
             public string ShiftTime { get; set; }
 
             // Flattened Data
-            public Guid UserId { get; set; }
-            public string ReceptionistName { get; set; }
-            public string Email { get; set; }
-            public string Role { get; set; }
-            public string ImageUrl { get; set; }
 
         }
     }
