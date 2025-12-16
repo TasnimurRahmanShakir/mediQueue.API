@@ -190,11 +190,18 @@ namespace mediQueue.API.Controllers
         [HttpGet("{id:Guid}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var user = await _userOperation.GetByIdAsync(id);
+            var user = await _userOperation.GetByIdWithIncludesAsync(id,
+                    u => u.DoctorProfile!,
+                    u => u.ReceptionistProfile!
+                );
             if (user == null) return NotFound("User not found.");
-
-            var result = _mapper.Map<UserDTO.Response>(user);
-            return Ok(result);
+           
+                var result = _mapper.Map<UserDTO.Response>(user);
+            return Ok(new
+            {
+                message = "User fetch successfully",
+                result = result
+            });
         }
 
         [HttpPost("login")]
