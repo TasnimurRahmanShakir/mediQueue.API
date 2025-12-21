@@ -49,12 +49,8 @@ namespace mediQueue.API.Helper
             //====================
             // APPOINTMENT Mapper
             //====================
-            CreateMap<AppointmentDTO.Create, Appointment>()
-                .ForMember(dest => dest.Scedule, opt => opt.MapFrom(src => src.Schedule));
-            CreateMap<Appointment, AppointmentDTO.Response>()
-                .ForMember(dest => dest.Schedule, opt => opt.MapFrom(src => src.Scedule))
-                .ForMember(dest => dest.DoctorName, opt => opt.MapFrom(src => src.Doctor.User.Name))
-                .ForMember(dest => dest.PatientName, opt => opt.MapFrom(src => src.Patient.Name));
+            CreateMap<AppointmentDTO.Create, Appointment>();
+            CreateMap<Appointment, AppointmentDTO.Response>();
 
 
             //====================

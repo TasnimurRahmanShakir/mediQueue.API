@@ -10,10 +10,11 @@
         public Guid PatientId { get; set; }
         public Patient? Patient { get; set; }
 
-        public string Reason { get; set; }
+        public string? Reason { get; set; }
         public string Status { get; set; } = "pending";
 
-        public DateTime? Scedule { get; set; }
+        public DateOnly? AppointmentDate { get; set; }
+        public TimeOnly? AppointmentTime { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

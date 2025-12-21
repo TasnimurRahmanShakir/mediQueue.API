@@ -56,7 +56,11 @@ namespace mediQueue.API.Controllers
             }
 
             var result = mapper.Map<ICollection<PatientDTO.Response>>(patients);
-            return Ok(result);
+            return Ok(new
+            {
+                message = "Patient Found Successfully",
+                result = result
+            });
         }
 
         // ===========================

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using mediQueue.API.Context;
 
@@ -11,9 +12,11 @@ using mediQueue.API.Context;
 namespace mediQueue.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251220101923_Add counsiling hour to database")]
+    partial class Addcounsilinghourtodatabase
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -63,7 +66,7 @@ namespace mediQueue.API.Migrations
 
                     b.ToTable("Appointments", t =>
                         {
-                            t.HasCheckConstraint("AppointmentStatus", "[Status] in ('Pending', 'In Progress', 'Completed', 'Cancelled')");
+                            t.HasCheckConstraint("AppointmentStatus", "[Status] in ('Pending', 'In Progress', 'Completed')");
                         });
                 });
 

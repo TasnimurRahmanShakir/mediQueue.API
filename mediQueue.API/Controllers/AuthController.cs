@@ -148,9 +148,14 @@ namespace mediQueue.API.Controllers
                     var doctor = new Doctor
                     {
                         UserId = user.Id,
-                        Specialization = userDto.Specialization,
-                        LicenseNumber = userDto.LicenseNumber,
-                        ConsultationFee = userDto.ConsultationFee ?? 0
+                        Specialization = userDto.Specialization!,
+                        LicenseNumber = userDto.LicenseNumber!,
+                        ConsultationFee = userDto.ConsultationFee ?? 0,
+
+                        // --- NEW CHANGES START ---
+                        CounsilingStart = userDto.CounsilingStart,
+                        CounsilingEnd = userDto.CounsilingEnd
+                        // --- NEW CHANGES END ---
                     };
 
                     await _doctorOperation.AddAsync(doctor);
@@ -162,7 +167,7 @@ namespace mediQueue.API.Controllers
                     var receptionist = new Receptionist
                     {
                         UserId = user.Id,
-                        ShiftTime = userDto.ShiftTime
+                        ShiftTime = userDto.ShiftTime!
                     };
 
                     await _receptionistOperation.AddAsync(receptionist);
@@ -182,6 +187,115 @@ namespace mediQueue.API.Controllers
                 return StatusCode(500, new
                 {
                     message = "Registration failed due to server error",
+                    error = ex.Message
+                });
+            }
+        }
+
+        [HttpPut("edit/{id:Guid}")]
+        public async Task<IActionResult> EditUser(Guid id, [FromForm] UserDTO.Edit editDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                var user = await _userOperation.GetByIdWithIncludesAsync(id,
+                    u => u.DoctorProfile!,
+                    u => u.ReceptionistProfile!);
+
+                if (user == null) return NotFound("User not found.");
+
+               
+                if (editDto.Image != null && editDto.Image.Length > 0)
+                {
+                    try
+                    {
+                        string projectDir = Directory.GetCurrentDirectory();
+                        string uploadDir = Path.Combine(projectDir, "wwwroot", "uploads");
+
+                        if (!Directory.Exists(uploadDir)) Directory.CreateDirectory(uploadDir);
+
+                       
+                        if (!string.IsNullOrEmpty(user.ImageUrl))
+                        {
+                            try
+                            {
+                                string oldFileName = Path.GetFileName(user.ImageUrl);
+                                string oldFilePath = Path.Combine(uploadDir, oldFileName);
+
+                                if (System.IO.File.Exists(oldFilePath))
+                                {
+                                    System.IO.File.Delete(oldFilePath);
+                                }
+                            }
+                            catch (Exception delEx)
+                            {
+                                Console.WriteLine($"Warning: Could not delete old image: {delEx.Message}");
+                            }
+                        }
+                        
+                        string fileName = $"{Guid.NewGuid()}{Path.GetExtension(editDto.Image.FileName)}";
+                        string fullPath = Path.Combine(uploadDir, fileName);
+
+                        using (var stream = new FileStream(fullPath, FileMode.Create))
+                        {
+                            await editDto.Image.CopyToAsync(stream);
+                        }
+
+                        user.ImageUrl = $"/uploads/{fileName}";
+                    }
+                    catch (Exception fileEx)
+                    {
+                        Console.WriteLine($"Image Edit Failed: {fileEx.Message}");
+                    }
+                }
+                // =========================================================
+
+                // 3. Update Basic Fields
+                user.Email = editDto.Email;
+                user.PhoneNumber = editDto.PhoneNumber;
+
+                if (!string.IsNullOrEmpty(editDto.Status))
+                {
+                    user.Status = editDto.Status;
+                }
+
+                // 4. Update Role Specific Details
+                if (user.Role.Equals("Doctor", StringComparison.OrdinalIgnoreCase) && user.DoctorProfile != null)
+                {
+                    if (editDto.ConsultationFee.HasValue)
+                    {
+                        user.DoctorProfile.ConsultationFee = editDto.ConsultationFee.Value;
+                    }
+
+                    
+                    user.DoctorProfile.CounsilingStart = editDto.CounsilingStart;
+                    user.DoctorProfile.CounsilingEnd = editDto.CounsilingEnd;
+                    
+                }
+                else if (user.Role.Equals("Receptionist", StringComparison.OrdinalIgnoreCase) && user.ReceptionistProfile != null)
+                {
+                    if (!string.IsNullOrEmpty(editDto.ShiftTime))
+                    {
+                        user.ReceptionistProfile.ShiftTime = editDto.ShiftTime;
+                    }
+                }
+
+                await _userOperation.SaveChangesAsync();
+
+                var responseDto = _mapper.Map<UserDTO.Response>(user);
+
+                return Ok(new
+                {
+                    message = "User updated successfully",
+                    result = responseDto
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    message = "Update failed due to server error",
                     error = ex.Message
                 });
             }

@@ -98,7 +98,7 @@ namespace mediQueue.API.Context
                 entity.Property(p => p.Reason).IsRequired().HasMaxLength(100);
                 entity.Property(p => p.Status).IsRequired().HasMaxLength(10);
                 entity.ToTable(t => t.HasCheckConstraint("AppointmentStatus",
-                       "[Status] in ('Pending', 'In Progress', 'Completed')"));
+                       "[Status] in ('Pending', 'In Progress', 'Completed', 'Cancelled')"));
                 entity.Property(p => p.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
 
 

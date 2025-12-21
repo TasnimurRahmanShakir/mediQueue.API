@@ -16,6 +16,11 @@ namespace mediQueue.API.Model.DTO
             public string LicenseNumber { get; set; }
 
             [Required]
+            public TimeOnly CounsilingStart { get; set; }
+            [Required]
+            public TimeOnly CounsilingEnd { get; set;  }
+
+            [Required]
             [Range(0, 5000)]
             public decimal ConsultationFee { get; set; }
         }
@@ -26,6 +31,10 @@ namespace mediQueue.API.Model.DTO
             public Guid Id { get; set; }
             public string Specialization { get; set; }
             public decimal ConsultationFee { get; set; }
+            [Required]
+            public TimeOnly CounsilingStart { get; set; }
+            [Required]
+            public TimeOnly CounsilingEnd { get; set; }
         }
 
         public class Response
@@ -34,6 +43,9 @@ namespace mediQueue.API.Model.DTO
             public string Specialization { get; set; }
             public string LicenseNumber { get; set; }
             public decimal ConsultationFee { get; set; }
+
+            public TimeOnly CounsilingStart { get; set; }
+            public TimeOnly CounsilingEnd { get; set; }
 
 
         }

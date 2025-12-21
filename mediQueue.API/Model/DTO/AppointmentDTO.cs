@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using mediQueue.API.Model.Entity;
+using System.ComponentModel.DataAnnotations;
 
 namespace mediQueue.API.Model.DTO
 {
@@ -9,14 +10,22 @@ namespace mediQueue.API.Model.DTO
             [Required]
             public Guid DoctorId { get; set; }
 
-            [Required]
-            public Guid PatientId { get; set; }
+            // Make PatientId OPTIONAL (Nullable)
+            public Guid? PatientId { get; set; }
+
+            // Add Patient Registration Fields (Optional)
+            public string? Name { get; set; }
+            public string? PhoneNumber { get; set; }
+            public string? BloodGroup { get; set; }
+            public DateTime? DOB { get; set; }
+
+            public string? Reason { get; set; }
 
             [Required]
-            public string Reason { get; set; }
+            public DateOnly AppointmentDate { get; set; }
 
             [Required]
-            public DateTime Schedule { get; set; }
+            public TimeOnly AppointmentTime { get; set; }
         }
 
         public class Response
@@ -24,15 +33,12 @@ namespace mediQueue.API.Model.DTO
             public Guid Id { get; set; }
             public string Reason { get; set; }
             public string Status { get; set; }
-            public DateTime? Schedule { get; set; }
+            public TimeOnly? Time { get; set; }
             public DateTime CreatedAt { get; set; }
 
             // Flattened Data 
-            public Guid DoctorId { get; set; }
-            public string DoctorName { get; set; }
-
-            public Guid PatientId { get; set; }
-            public string PatientName { get; set; }
+            public Doctor? Doctor { get; set; }
+            public Patient? Patient { get; set; }
         }
     }
 }

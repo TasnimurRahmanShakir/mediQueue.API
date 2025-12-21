@@ -1,9 +1,11 @@
 ﻿// Add other necessary usings
 using AutoMapper;
+using mediQueue.API.Context;
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
 using mediQueue.API.Repository.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 [Route("api/[controller]")]
@@ -12,11 +14,13 @@ public class DoctorController : ControllerBase
 {
     private readonly IDbOperation<Doctor> doctorOperation;
     private readonly IMapper mapper;
+    private readonly ApplicationDbContext dbContext;
 
-    public DoctorController(IDbOperation<Doctor> doctorOperation, IMapper mapper)
+    public DoctorController(IDbOperation<Doctor> doctorOperation, IMapper mapper, ApplicationDbContext dbContext)
     {
         this.doctorOperation = doctorOperation;
         this.mapper = mapper;
+        this.dbContext = dbContext;
     }
 
     // -----------
@@ -70,12 +74,39 @@ public class DoctorController : ControllerBase
     [HttpGet("{id:Guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        // This assumes you have a way to fetch the Doctor and INCLUDE the related User.
         var doctor = await doctorOperation.GetByIdAsync(id);
         if (doctor == null) return NotFound("Doctor profile not found.");
 
-        // If the above method didn't include User, the mapper will fail to get the name.
         var result = mapper.Map<DoctorDTO.Response>(doctor);
         return Ok(result);
+    }
+
+
+
+    [HttpGet("departments/{param}")]
+    public async Task<IActionResult> GetDepartmentsWithDoctors(string param)
+    {
+        var departments = await dbContext.Doctors
+            .Include(d => d.User)
+            .Where(d => d.Specialization.Contains(param)) 
+            .GroupBy(g => g.Specialization)
+            .Select(g => new
+            {
+                DepartmentName = g.Key,
+                Doctors = g.Select(d => new
+                {
+                    d.Id,
+                    d.User.Name,
+                    d.CounsilingStart,
+                    d.CounsilingEnd
+                }).ToList()
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            message = "Departments and doctors fetched successfully",
+            result = departments
+        });
     }
 }

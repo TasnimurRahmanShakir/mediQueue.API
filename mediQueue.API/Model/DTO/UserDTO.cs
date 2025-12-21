@@ -29,12 +29,42 @@ namespace mediQueue.API.Model.DTO
             public string? ImageUrl { get; set; }
 
             [Required]
-            public string Role { get; set; } // e.g., "Doctor", "Patient", "Receptionist"
+            public required string Role { get; set; } // e.g., "Doctor", "Patient", "Receptionist"
 
             // --- NEW: Doctor Specific Fields (Nullable) ---
             public string? Specialization { get; set; }
             public string? LicenseNumber { get; set; }
             public decimal? ConsultationFee { get; set; }
+
+            [Required]
+            public TimeOnly CounsilingStart { get; set; }
+            [Required]
+            public TimeOnly CounsilingEnd { get; set; }
+
+            public string? ShiftTime { get; set; }
+        }
+
+        public class Edit
+        {
+
+            
+            [Required]
+            [EmailAddress]
+            public required string Email { get; set; }
+
+            [Required]
+            [Phone]
+            public required string PhoneNumber { get; set; }
+            public IFormFile? Image { get; set; }
+            public string? ImageUrl { get; set; }
+
+            public string? Status { get; set; }
+
+            public decimal? ConsultationFee { get; set; }
+           
+            public TimeOnly CounsilingStart { get; set; }
+            
+            public TimeOnly CounsilingEnd { get; set; }
 
             public string? ShiftTime { get; set; }
         }
