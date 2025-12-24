@@ -40,5 +40,21 @@ namespace mediQueue.API.Model.DTO
             public Doctor? Doctor { get; set; }
             public Patient? Patient { get; set; }
         }
+
+        public class AppointmentWithPatientDto
+        {
+            // Appointment Info
+            public Guid AppointmentId { get; set; }
+            public DateOnly? AppointmentDate { get; set; }
+            public TimeOnly? AppointmentTime { get; set; }
+            public string Status { get; set; }
+            public string Reason { get; set; }
+
+            // Nested Patient Info
+            public Guid PatientId { get; set; }
+            public string PatientName { get; set; }
+            public string PatientPhone { get; set; }
+            public string? BloodGroup { get; set; }
+        }
     }
 }

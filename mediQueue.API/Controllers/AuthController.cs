@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using mediQueue.API.Context;
 using mediQueue.API.Helpers;
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
@@ -6,7 +7,7 @@ using mediQueue.API.Repository.Interfaces;
 using mediQueue.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
+using Microsoft.EntityFrameworkCore;
 using UserEntity = mediQueue.API.Model.Entity.User;
 
 namespace mediQueue.API.Controllers
@@ -21,6 +22,7 @@ namespace mediQueue.API.Controllers
         private readonly IDbOperation<Receptionist> _receptionistOperation;
         private readonly IMapper _mapper;
         private readonly JwtService _jwtService;
+        private readonly ApplicationDbContext _context;
 
         // Constructor with null-checks to satisfy nullable analysis and ensure dependencies exist
         public AuthController(
@@ -28,13 +30,14 @@ namespace mediQueue.API.Controllers
             IDbOperation<Doctor> doctorOperation,
             IDbOperation<Receptionist> receptionistOperation,
             IMapper mapper,
-            JwtService jwtService)
+            JwtService jwtService, ApplicationDbContext context)
         {
             _userOperation = userOperation;
             _doctorOperation = doctorOperation;
             _receptionistOperation = receptionistOperation;
             _mapper = mapper;
             _jwtService = jwtService;
+            _context = context;
         }
 
         [HttpGet]
@@ -324,8 +327,15 @@ namespace mediQueue.API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var users = await _userOperation.FindAsync(u => u.Email == userDto.Email);
-            var user = users.FirstOrDefault();
+            //var users = await _userOperation.FindAsync(u => u.Email == userDto.Email);
+            //var user = users.FirstOrDefault();
+
+            //if (user == null) return Unauthorized("User Does not exist");
+
+            var user = await _context.Users
+                .Include(u => u.DoctorProfile)       // <--- This loads the Doctor data!
+                .Include(u => u.ReceptionistProfile) // <--- This loads Receptionist data!
+                .FirstOrDefaultAsync(u => u.Email == userDto.Email);
 
             if (user == null) return Unauthorized("User Does not exist");
 

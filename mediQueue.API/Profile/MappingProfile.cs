@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using mediQueue.API.Model.DTO;
 using mediQueue.API.Model.Entity;
+using static mediQueue.API.Model.DTO.AppointmentDTO;
 
 namespace mediQueue.API.Helper
 {
@@ -51,6 +52,12 @@ namespace mediQueue.API.Helper
             //====================
             CreateMap<AppointmentDTO.Create, Appointment>();
             CreateMap<Appointment, AppointmentDTO.Response>();
+            CreateMap<Appointment, AppointmentWithPatientDto>()
+                .ForMember(dest => dest.AppointmentId, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.PatientId, opt => opt.MapFrom(src => src.Patient.Id))
+                .ForMember(dest => dest.PatientName, opt => opt.MapFrom(src => src.Patient.Name))
+                .ForMember(dest => dest.PatientPhone, opt => opt.MapFrom(src => src.Patient.PhoneNumber))
+                .ForMember(dest => dest.BloodGroup, opt => opt.MapFrom(src => src.Patient.BloodGroup));
 
 
             //====================

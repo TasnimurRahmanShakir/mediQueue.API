@@ -16,10 +16,8 @@ namespace mediQueue.API.Model.Entity
         public string? RefreshToken { get; set; }
 
         public DateTime RefreshTokenExpiryTime { get; set; }
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Doctor? DoctorProfile { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Receptionist? ReceptionistProfile { get; set; }
     }
 }
